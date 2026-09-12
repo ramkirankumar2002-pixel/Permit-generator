@@ -318,10 +318,10 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#212121;min-height:
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
 
-  /* Hide the website chrome — print only permit sheets */
+  /* Hide the website chrome — print permit + instruction sheets */
   #topbar,
   #nav-tabs,
   .export-bar,
@@ -338,8 +338,7 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#212121;min-height:
   #toast-container,
   .card-header,
   .tab-panel:not(#panel-dashboard),
-  .card:not(#preview-card),
-  .instruction-page {
+  .card:not(#preview-card) {
     display: none !important;
   }
 
@@ -358,11 +357,12 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#212121;min-height:
     border-radius: 0 !important;
     box-shadow: none !important;
     background: transparent !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
 
-  /* Each royalty sheet is exactly one A4. No extra blank page after the last. */
-  .permit-page {
+  /* Each permit sheet and each instruction sheet is one A4 page. */
+  .permit-page,
+  .instruction-page {
     display: block !important;
     position: relative !important;
     width: 210mm !important;
@@ -382,7 +382,8 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#212121;min-height:
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
-  .permit-page.print-sheet-last {
+  .permit-page.print-sheet-last,
+  .instruction-page.print-sheet-last {
     page-break-after: auto !important;
     break-after: auto !important;
   }
@@ -1733,9 +1734,9 @@ async function buildFullA4Pdf(pages, progressCb){
   return pdf;
 }
 
-/** Native Chrome/Edge print: one .permit-page = one A4 sheet. */
+/** Native Chrome/Edge print: permit page, then instruction page, repeating. */
 function printFullA4(){
-  const sheets = Array.from(document.querySelectorAll('.permit-page'));
+  const sheets = Array.from(document.querySelectorAll('.permit-page, .instruction-page'));
   if(!sheets.length){ showToast('Generate permits first!','error'); return; }
   applyCalibrationStyles();
   sheets.forEach((el, i) => {
