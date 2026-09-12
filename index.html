@@ -154,18 +154,19 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#212121;min-height:
 =================================================== */
 /* Permit page wrapper — one A4 = 2 permits (Royalty Page with background) */
 .permit-page {
-  width: 21cm;
-  height: 29.7cm;
+  width: 210mm;
+  height: 297mm;
   margin: 0 auto 40px;
   background-color: #fff;
   background-image: url('permit_bg.jpg');
-  background-size: 21cm 29.7cm;
-  background-position: center top;
+  background-size: 210mm 297mm;
+  background-position: 0 0;
   background-repeat: no-repeat;
   box-shadow: 0 4px 24px rgba(0,0,0,.15);
   display: block;
   box-sizing: border-box;
   position: relative;
+  overflow: hidden;
 }
 .permit-doc {
   background: transparent;
@@ -270,44 +271,89 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#212121;min-height:
 
 /* Instruction page — one A4 = Terms & Conditions */
 .instruction-page {
-  width: 21cm;
-  height: 29.7cm;
+  width: 210mm;
+  height: 297mm;
   margin: 0 auto 40px;
   background-color: #fff;
   background-image: url('instruction_page.jpg');
-  background-size: 21cm 29.7cm;
-  background-position: center top;
+  background-size: 210mm 297mm;
+  background-position: 0 0;
   background-repeat: no-repeat;
   box-shadow: 0 4px 24px rgba(0,0,0,.15);
   box-sizing: border-box;
   position: relative;
+  overflow: hidden;
 }
 
-/* ===== PRINT ===== */
+/* ===== PRINT — one sheet = exactly one A4 (210×297mm) ===== */
 @media print {
-  @page { size: A4 portrait; margin: 0; }
-  body { background: #fff; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  #topbar,#nav-tabs,.export-bar,.generate-hero,.generate-params,.generate-actions,.card:not(#preview-card),.stats-row,.info-box,.progress-wrap,.progress-text { display: none !important; }
-  #main-content { padding: 0; max-width: 100%; margin: 0; }
-  #preview-card { display: block !important; border: none; box-shadow: none; padding: 0; margin: 0; }
-  .card-header { display: none; }
-  #permits-preview { padding: 0; margin: 0; }
-  .permit-page, .instruction-page {
-    width: 21cm;
-    height: 29.7cm;
+  @page {
+    size: 210mm 297mm;
     margin: 0;
-    padding: 0;
-    box-shadow: none;
+  }
+  html, body {
+    width: 210mm !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    overflow: visible !important;
+  }
+  #topbar,#nav-tabs,.export-bar,.generate-hero,.generate-params,.generate-actions,.card:not(#preview-card),.stats-row,.info-box,.progress-wrap,.progress-text,.toast-container,#calibration-panel { display: none !important; }
+  #main-content,
+  #panel-dashboard,
+  #preview-card,
+  #permits-preview {
+    display: block !important;
+    width: 210mm !important;
+    max-width: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+  .tab-panel:not(#panel-dashboard) { display: none !important; }
+  .card-header { display: none !important; }
+  .permit-page, .instruction-page {
+    width: 210mm !important;
+    height: 297mm !important;
+    max-width: 210mm !important;
+    max-height: 297mm !important;
+    min-height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: hidden !important;
     page-break-after: always;
     break-after: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    background-color: #fff !important;
+    background-size: 210mm 297mm !important;
+    background-position: 0 0 !important;
+    background-repeat: no-repeat !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .permit-page:last-child,
+  .instruction-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
   }
   .permit-page {
-    display: block;
-    position: relative;
+    display: block !important;
+    position: relative !important;
   }
   .permit-doc {
-    box-shadow: none;
+    box-shadow: none !important;
     margin: 0 !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
   }
 }
 
@@ -709,11 +755,25 @@ function applyCalibrationStyles(){
     document.head.appendChild(styleEl);
   }
   styleEl.innerHTML = `
+    .permit-page, .instruction-page {
+      width: 210mm !important;
+      height: 297mm !important;
+      max-width: 210mm !important;
+      max-height: 297mm !important;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+    }
     .permit-page {
       display: block !important;
       position: relative !important;
       padding: 0 !important;
       gap: 0 !important;
+      background-size: 210mm 297mm !important;
+      background-position: 0 0 !important;
+    }
+    .instruction-page {
+      background-size: 210mm 297mm !important;
+      background-position: 0 0 !important;
     }
     .permit-doc {
       width: ${cal.tableWidth}cm !important;
@@ -726,6 +786,8 @@ function applyCalibrationStyles(){
       left: 50% !important;
       transform: translateX(-50%) !important;
       margin: 0 !important;
+      page-break-after: avoid !important;
+      break-after: avoid !important;
     }
     .permit-doc:nth-child(1) {
       top: ${cal.p1Top}cm !important;
@@ -1646,7 +1708,10 @@ function initExport(){
   document.getElementById('btn-export-zip').addEventListener('click',exportZIP);
   document.getElementById('btn-print').addEventListener('click',()=>{
     if(!document.querySelectorAll('.permit-page').length){ showToast('Generate permits first!','error'); return; }
-    window.print();
+    applyCalibrationStyles();
+    // Keep pages locked to A4; remind about browser print settings that cause shrink/clip
+    showToast('Print tip: Margins = None, enable Background graphics','',4500);
+    setTimeout(()=>window.print(), 150);
   });
 }
 
