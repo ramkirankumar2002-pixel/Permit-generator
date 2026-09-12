@@ -158,15 +158,23 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#212121;min-height:
   height: 297mm;
   margin: 0 auto 40px;
   background-color: #fff;
-  background-image: url('permit_bg.jpg');
-  background-size: 210mm 297mm;
-  background-position: 0 0;
-  background-repeat: no-repeat;
   box-shadow: 0 4px 24px rgba(0,0,0,.15);
   display: block;
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
+}
+.page-bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+  display: block;
 }
 .permit-doc {
   background: transparent;
@@ -180,13 +188,16 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#212121;min-height:
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
+  z-index: 1;
 }
 /* Original (top half): below heading, fully inside top half */
-.permit-doc:nth-child(1) {
+.permit-doc.permit-original,
+.permit-page > .permit-doc:nth-of-type(1) {
   top: 4.1cm;
 }
 /* Duplicate (bottom half): below its heading — reference alignment */
-.permit-doc:nth-child(2) {
+.permit-doc.permit-duplicate,
+.permit-page > .permit-doc:nth-of-type(2) {
   top: 16.95cm;
 }
 /* Generated serial sits over the pre-printed number and masks it */
@@ -275,10 +286,6 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#212121;min-height:
   height: 297mm;
   margin: 0 auto 40px;
   background-color: #fff;
-  background-image: url('instruction_page.jpg');
-  background-size: 210mm 297mm;
-  background-position: 0 0;
-  background-repeat: no-repeat;
   box-shadow: 0 4px 24px rgba(0,0,0,.15);
   box-sizing: border-box;
   position: relative;
@@ -762,18 +769,23 @@ function applyCalibrationStyles(){
       max-height: 297mm !important;
       overflow: hidden !important;
       box-sizing: border-box !important;
+      position: relative !important;
+      background-image: none !important;
+    }
+    .page-bg {
+      position: absolute !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: fill !important;
+      z-index: 0 !important;
+      display: block !important;
     }
     .permit-page {
       display: block !important;
-      position: relative !important;
       padding: 0 !important;
       gap: 0 !important;
-      background-size: 210mm 297mm !important;
-      background-position: 0 0 !important;
-    }
-    .instruction-page {
-      background-size: 210mm 297mm !important;
-      background-position: 0 0 !important;
     }
     .permit-doc {
       width: ${cal.tableWidth}cm !important;
@@ -786,13 +798,16 @@ function applyCalibrationStyles(){
       left: 50% !important;
       transform: translateX(-50%) !important;
       margin: 0 !important;
+      z-index: 1 !important;
       page-break-after: avoid !important;
       break-after: avoid !important;
     }
-    .permit-doc:nth-child(1) {
+    .permit-doc.permit-original,
+    .permit-page > .permit-doc:nth-of-type(1) {
       top: ${cal.p1Top}cm !important;
     }
-    .permit-doc:nth-child(2) {
+    .permit-doc.permit-duplicate,
+    .permit-page > .permit-doc:nth-of-type(2) {
       top: ${cal.p2Top}cm !important;
     }
     .permit-top-bar {
@@ -1046,13 +1061,14 @@ function buildPermit(index, params, tmpl){
 // ============================================================
 // RENDER SINGLE PERMIT HTML
 // ============================================================
-function renderPermitHTML(p, qrDataUrl){
+function renderPermitHTML(p, qrDataUrl, isOriginal){
   const sigs = getSignatures();
   const adddSigHTML = sigs.addd ? `<img src="${sigs.addd}" style="max-height:34px;max-width:90px;object-fit:contain;display:block;">` : '';
   const qrHTML = qrDataUrl ? `<img src="${qrDataUrl}" alt="QR">` : '';
+  const copyClass = isOriginal ? 'permit-original' : 'permit-duplicate';
 
   return `
-<div class="permit-doc" data-permit-id="${p.serialNo}">
+<div class="permit-doc ${copyClass}" data-permit-id="${p.serialNo}">
 
   <!-- TOP BAR: HSN (left) | Serial No + QR (right) -->
   <div class="permit-top-bar">
@@ -1268,12 +1284,14 @@ async function generateAll(){
       royaltyPage.className = 'permit-page';
       royaltyPage.id = `permit-page-${pageIndex}`;
       royaltyPage.setAttribute('data-permit-group', pageIndex);
+      royaltyPage.innerHTML = '<img class="page-bg" src="permit_bg.jpg" alt="" draggable="false">';
       container.appendChild(royaltyPage);
 
       const instrPage = document.createElement('div');
       instrPage.className = 'instruction-page';
       instrPage.id = `instruction-page-${pageIndex}`;
       instrPage.setAttribute('data-instruction-group', pageIndex);
+      instrPage.innerHTML = '<img class="page-bg" src="instruction_page.jpg" alt="" draggable="false">';
       container.appendChild(instrPage);
     }
 
@@ -1281,7 +1299,7 @@ async function generateAll(){
     const pageIndex = Math.floor(i / 2);
     const targetRoyaltyPage = document.getElementById(`permit-page-${pageIndex}`);
     const temp = document.createElement('div');
-    temp.innerHTML = renderPermitHTML(p, qrUrl).trim();
+    temp.innerHTML = renderPermitHTML(p, qrUrl, i % 2 === 0).trim();
     targetRoyaltyPage.appendChild(temp.firstChild);
 
     // Update progress
@@ -1597,29 +1615,30 @@ function setExportProgress(cur, total){
 }
 
 async function capturePermitEl(el){
-  const A4_W = Math.round(210 * 96 / 25.4); // ~794px
-  const A4_H = Math.round(297 * 96 / 25.4); // ~1123px
-  const prev = {
-    width: el.style.width,
-    height: el.style.height,
-    minHeight: el.style.minHeight,
-    maxHeight: el.style.maxHeight,
-    margin: el.style.margin,
-    boxShadow: el.style.boxShadow,
-    backgroundSize: el.style.backgroundSize,
-    overflow: el.style.overflow
-  };
-  el.style.width = A4_W + 'px';
-  el.style.height = A4_H + 'px';
-  el.style.minHeight = A4_H + 'px';
-  el.style.maxHeight = A4_H + 'px';
-  el.style.margin = '0';
-  el.style.boxShadow = 'none';
-  el.style.backgroundSize = A4_W + 'px ' + A4_H + 'px';
-  el.style.overflow = 'hidden';
+  const A4_W = 794;  // 210mm at 96dpi
+  const A4_H = 1123; // 297mm at 96dpi
+
+  // Off-DOM clone so capture is always exact A4, independent of screen layout
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:fixed;left:-10000px;top:0;width:'+A4_W+'px;height:'+A4_H+'px;overflow:hidden;background:#fff;z-index:-1;';
+  const clone = el.cloneNode(true);
+  clone.style.cssText = 'width:'+A4_W+'px;height:'+A4_H+'px;margin:0;padding:0;box-shadow:none;overflow:hidden;position:relative;background:#fff;';
+  const bg = clone.querySelector('.page-bg');
+  if(bg){
+    bg.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;object-fit:fill;z-index:0;display:block;';
+    // Ensure image is loaded in clone
+    if(!bg.complete){
+      await new Promise(res => { bg.onload = () => res(); bg.onerror = () => res(); });
+    }
+  }
+  wrap.appendChild(clone);
+  document.body.appendChild(wrap);
+
+  // Wait for fonts/images
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
   try {
-    return await html2canvas(el, {
+    return await html2canvas(clone, {
       scale: 2,
       useCORS: true,
       allowTaint: true,
@@ -1628,68 +1647,133 @@ async function capturePermitEl(el){
       width: A4_W,
       height: A4_H,
       windowWidth: A4_W,
-      windowHeight: A4_H
+      windowHeight: A4_H,
+      onclone: (doc, node) => {
+        node.style.width = A4_W + 'px';
+        node.style.height = A4_H + 'px';
+        const b = node.querySelector('.page-bg');
+        if(b){
+          b.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;object-fit:fill;z-index:0;display:block;';
+        }
+      }
     });
   } finally {
-    el.style.width = prev.width;
-    el.style.height = prev.height;
-    el.style.minHeight = prev.minHeight;
-    el.style.maxHeight = prev.maxHeight;
-    el.style.margin = prev.margin;
-    el.style.boxShadow = prev.boxShadow;
-    el.style.backgroundSize = prev.backgroundSize;
-    el.style.overflow = prev.overflow;
+    wrap.remove();
   }
 }
 
 /** Build a full-bleed A4 PDF (each page fills 210×297mm with no margins). */
 async function buildFullA4Pdf(pages, progressCb){
   const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [210, 297], compress: true });
   for(let i = 0; i < pages.length; i++){
     if(progressCb) progressCb(i + 1, pages.length);
-    if(i > 0) pdf.addPage();
+    if(i > 0) pdf.addPage([210, 297]);
     const canvas = await capturePermitEl(pages[i]);
-    const img = canvas.toDataURL('image/jpeg', 0.95);
-    // Stretch capture to the full A4 page — edge to edge
+    const img = canvas.toDataURL('image/jpeg', 0.97);
     pdf.addImage(img, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
   }
   return pdf;
 }
 
+/** Print using an HTML document where each page is exactly one full A4 image. */
 async function printFullA4(){
-  const pages = document.querySelectorAll('.permit-page, .instruction-page');
+  const pages = Array.from(document.querySelectorAll('.permit-page, .instruction-page'));
   if(!pages.length){ showToast('Generate permits first!','error'); return; }
   applyCalibrationStyles();
   const pw = document.getElementById('export-progress-wrap');
   if(pw) pw.style.display = 'block';
-  showToast('Preparing full-page A4 print...','');
+  showToast('Preparing full A4 pages...','');
+
   try {
-    const pdf = await buildFullA4Pdf(pages, setExportProgress);
-    const blob = pdf.output('blob');
-    const url = URL.createObjectURL(blob);
-    // Hidden iframe print — more reliable than browser CSS print scaling
+    const images = [];
+    for(let i = 0; i < pages.length; i++){
+      setExportProgress(i + 1, pages.length);
+      const canvas = await capturePermitEl(pages[i]);
+      images.push(canvas.toDataURL('image/jpeg', 0.97));
+    }
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>TN Mining Permits — A4 Print</title>
+<style>
+  @page { size: A4 portrait; margin: 0mm; }
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 210mm;
+    background: #fff;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .sheet {
+    width: 210mm;
+    height: 297mm;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    page-break-after: always;
+    break-after: page;
+    page-break-inside: avoid;
+  }
+  .sheet:last-child { page-break-after: auto; break-after: auto; }
+  .sheet img {
+    width: 210mm !important;
+    height: 297mm !important;
+    max-width: none !important;
+    max-height: none !important;
+    display: block !important;
+    object-fit: fill !important;
+  }
+  @media print {
+    html, body { width: 210mm; height: auto; }
+    .sheet { width: 210mm; height: 297mm; }
+    .sheet img { width: 210mm !important; height: 297mm !important; }
+  }
+</style></head><body>
+${images.map(src => `<div class="sheet"><img src="${src}" width="794" height="1123" alt=""></div>`).join('')}
+<script>
+  function goPrint(){
+    window.focus();
+    window.print();
+  }
+  window.onload = function(){
+    var imgs = Array.prototype.slice.call(document.images);
+    var left = imgs.length;
+    if(!left){ goPrint(); return; }
+    imgs.forEach(function(img){
+      if(img.complete){ if(--left===0) setTimeout(goPrint, 200); }
+      else {
+        img.onload = img.onerror = function(){ if(--left===0) setTimeout(goPrint, 200); };
+      }
+    });
+  };
+<\/script>
+</body></html>`;
+
     let iframe = document.getElementById('print-a4-frame');
     if(iframe) iframe.remove();
     iframe = document.createElement('iframe');
     iframe.id = 'print-a4-frame';
-    iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+    iframe.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:99999;background:#fff;';
     document.body.appendChild(iframe);
-    iframe.onload = () => {
-      try {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-      } catch(e) {
-        window.open(url, '_blank');
-      }
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    // Remove overlay iframe after print
+    const cleanup = () => {
+      setTimeout(() => { try { iframe.remove(); } catch(e){} }, 500);
       if(pw) pw.style.display = 'none';
-      showToast('Print: set paper size to A4','success');
     };
-    iframe.src = url;
+    iframe.contentWindow.onafterprint = cleanup;
+    setTimeout(cleanup, 120000);
+
+    showToast('Print dialog: choose A4, Margins = None','success');
   } catch(err) {
     console.error(err);
     if(pw) pw.style.display = 'none';
-    showToast('Print failed — try Single PDF instead','error');
+    showToast('Print failed — try Single PDF','error');
   }
 }
 
