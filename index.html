@@ -176,48 +176,6 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#212121;min-height:
   user-select: none;
   display: block;
 }
-/* Sharp vector headings over the blurry JPEG title */
-.permit-heading {
-  position: absolute;
-  left: 32mm;
-  right: 28mm;
-  z-index: 4;
-  background: #fff;
-  text-align: center;
-  font-family: Arial, Helvetica, sans-serif;
-  color: #6d1840;
-  line-height: 1.15;
-  box-sizing: border-box;
-  padding: 0 2mm;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: geometricPrecision;
-}
-.permit-heading-original { top: 10.2mm; }
-.permit-heading-duplicate { top: 150.8mm; }
-.permit-heading .h-gov {
-  font-size: 11.5pt;
-  font-weight: 800;
-  letter-spacing: 0.4px;
-}
-.permit-heading .h-dept {
-  font-size: 10pt;
-  font-weight: 800;
-  letter-spacing: 0.25px;
-  margin-top: 0.4mm;
-}
-.permit-heading .h-office {
-  font-size: 8.2pt;
-  font-weight: 700;
-  color: #4a1230;
-  margin-top: 0.6mm;
-}
-.permit-heading .h-title {
-  font-size: 8.4pt;
-  font-weight: 700;
-  color: #4a1230;
-  margin-top: 0.4mm;
-}
 .permit-doc {
   background: transparent;
   font-family: Arial, Helvetica, sans-serif;
@@ -438,13 +396,6 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#212121;min-height:
     height: 297mm !important;
     object-fit: fill !important;
     display: block !important;
-  }
-  .permit-heading {
-    display: block !important;
-    background: #fff !important;
-    color: #6d1840 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
   }
 
   .permit-doc {
@@ -1377,20 +1328,7 @@ async function generateAll(){
       royaltyPage.className = 'permit-page';
       royaltyPage.id = `permit-page-${pageIndex}`;
       royaltyPage.setAttribute('data-permit-group', pageIndex);
-      royaltyPage.innerHTML = `
-        <img class="page-bg" src="permit_bg.jpg?v=a4full" alt="" draggable="false">
-        <div class="permit-heading permit-heading-original">
-          <div class="h-gov">GOVERNMENT OF TAMIL NADU</div>
-          <div class="h-dept">DEPARTMENT OF GEOLOGY AND MINING</div>
-          <div class="h-office">O/o. DEPUTY DIRECTOR / ASSISTANT DIRECTOR</div>
-          <div class="h-title">TRANSPORT PERMIT (Original)</div>
-        </div>
-        <div class="permit-heading permit-heading-duplicate">
-          <div class="h-gov">GOVERNMENT OF TAMIL NADU</div>
-          <div class="h-dept">DEPARTMENT OF GEOLOGY AND MINING</div>
-          <div class="h-office">O/o. DEPUTY DIRECTOR / ASSISTANT DIRECTOR</div>
-          <div class="h-title">TRANSPORT PERMIT (Duplicate)</div>
-        </div>`;
+      royaltyPage.innerHTML = '<img class="page-bg" src="permit_bg.jpg?v=a4full" alt="" draggable="false">';
       container.appendChild(royaltyPage);
 
       const instrPage = document.createElement('div');
