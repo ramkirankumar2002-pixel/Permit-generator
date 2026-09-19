@@ -11,16 +11,22 @@ import { getSignatures } from './signatureManager.js';
 // ─────────────────────────────────────────────────────
 
 function buildQRData(p) {
+  const dist = String(p.totalDistance || '').replace(/kms$/i,'').trim();
+  const qty = String(p.quantity || '').replace(/\s*MT$/i,'').trim();
+  const mineral = String(p.mineralName || '').trim();
+  const dest = String(p.destinationAddress || '').trim();
+  const dt = String(p.dispatchDateTime || '').replace(/:\d{2}$/, '');
   return [
-    `Serial No: ${p.serialNo}`,
-    `Dispatch Slip: ${p.dispatchSlipNo}`,
-    `Vehicle No: ${p.vehicleNo}`,
-    `Driver License: ${p.driverLicenseNo}`,
-    `Driver Phone: ${p.driverPhone}`,
-    `Date & Time: ${p.dispatchDateTime}`,
-    `Quantity: ${p.quantity} MT`,
-    `Mineral: ${p.mineralName}`
-  ].join('\n');
+    p.serialNo,
+    p.dispatchSlipNo,
+    p.mineCode,
+    dt,
+    dist ? `${dist}kms` : '',
+    '1hrs',
+    mineral && qty ? `${mineral}(${qty}MT)` : mineral,
+    p.vehicleNo,
+    dest
+  ].join(',');
 }
 
 function generateQRDataURL(text) {

@@ -1076,6 +1076,25 @@ function incrDispatch(base, steps){
 // ============================================================
 // QR CODE GENERATION
 // ============================================================
+function buildQRText(p){
+  const dist = String(p.totalDistance || '').replace(/kms$/i,'').trim();
+  const qty = String(p.quantity || '').replace(/\s*MT$/i,'').trim();
+  const mineral = String(p.mineralName || '').trim();
+  const dest = String(p.destinationAddress || '').trim();
+  const dt = String(p.dispatchDateTime || '').replace(/:\d{2}$/, '');
+  return [
+    p.serialNo,
+    p.dispatchSlipNo,
+    p.mineCode,
+    dt,
+    dist ? `${dist}kms` : '',
+    '1hrs',
+    mineral && qty ? `${mineral}(${qty}MT)` : mineral,
+    p.vehicleNo,
+    dest
+  ].join(',');
+}
+
 function genQR(text){
   return new Promise(resolve=>{
     try{
@@ -1324,18 +1343,7 @@ async function generateAll(){
 
   for(let i=0;i<generatedPermits.length;i++){
     const p = generatedPermits[i];
-    const qrText = [
-      `Serial No: ${p.serialNo}`,
-      `Dispatch Slip: ${p.dispatchSlipNo}`,
-      `Vehicle No: ${p.vehicleNo}`,
-      `Driver License: ${p.driverLicenseNo}`,
-      `Driver Phone: ${p.driverPhone}`,
-      `Date & Time: ${p.dispatchDateTime}`,
-      `Quantity: ${p.quantity} MT`,
-      `Mineral: ${p.mineralName}`
-    ].join('\n');
-
-    const qrUrl = await genQR(qrText);
+    const qrUrl = await genQR(buildQRText(p));
 
     // Group every 2 permits into one Royalty .permit-page (with background)
     // followed immediately by its .instruction-page (Terms & Conditions)
