@@ -12,7 +12,7 @@ import { getSignatures } from './signatureManager.js';
 
 function readQRConfig(){
   try {
-    const raw = JSON.parse(localStorage.getItem('qrConfig') || 'null');
+    const raw = JSON.parse(localStorage.getItem('qrConfigV2') || 'null');
     if (raw && Array.isArray(raw.fields)) return raw;
   } catch { /* use default */ }
   return {
@@ -26,7 +26,7 @@ function readQRConfig(){
       { id: 'hours', on: true },
       { id: 'mineralQty', on: true },
       { id: 'vehicleNo', on: true },
-      { id: 'destination', on: true }
+      { id: 'deliveredTo', on: true }
     ],
     uppercaseCodes: false,
     compactCodes: false

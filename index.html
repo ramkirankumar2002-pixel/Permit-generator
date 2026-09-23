@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="app-version" content="qr-dash-5">
   <meta name="description" content="Tamil Nadu Department of Geology and Mining — Transport Permit Generator">
   <title>TN Mining Transport Permit Generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -353,7 +354,8 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#212121;min-height:
   #toast-container,
   .card-header,
   .tab-panel:not(#panel-dashboard),
-  .card:not(#preview-card) {
+  .card:not(#preview-card),
+  #qr-customize-card {
     display: none !important;
   }
 
@@ -509,7 +511,24 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#212121;min-height:
       Travelling Date = Dispatch −10 min &nbsp;|&nbsp;
       Required Time = Travelling +1 hr &nbsp;|&nbsp;
       Vehicles cycle: Permit 1→V1, 2→V2, 5→V1...
-      &nbsp;|&nbsp; QR fields can be changed in the <strong>QR Code</strong> tab.
+    </div>
+
+    <div id="qr-customize-card" style="margin:20px 0 8px;padding-top:16px;border-top:2px solid #fce4ec;">
+      <div class="section-divider">🔳 Customize QR Code</div>
+      <div class="info-box teal">
+        Tick the fields to include and use ↑ ↓ to set the order. This is what a scan will show. Save, then generate.
+      </div>
+      <div class="qr-opt-row">
+        <label class="qr-check"><input type="checkbox" id="qr-opt-upper"> Capital letters on serial, dispatch, minecode</label>
+        <label class="qr-check"><input type="checkbox" id="qr-opt-compact"> Remove spaces in serial, dispatch, minecode</label>
+      </div>
+      <div class="qr-field-list" id="qr-field-list"></div>
+      <div class="section-divider">Scan preview</div>
+      <div class="qr-preview-box" id="qr-preview-box"></div>
+      <div class="btn-group" style="margin-top:14px;">
+        <button type="button" class="btn btn-primary" id="btn-save-qr">💾 Save QR format</button>
+        <button type="button" class="btn btn-outline" id="btn-reset-qr">↺ Reset default</button>
+      </div>
     </div>
 
     <div id="progress-wrap" style="display:none;margin-bottom:14px;">
@@ -613,30 +632,6 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#212121;min-height:
         <button type="button" class="btn btn-outline" id="btn-reset-template2">↺ Reset to Defaults</button>
       </div>
     </form>
-  </div>
-</section>
-
-<!-- ===================== QR CODE CUSTOMIZE ===================== -->
-<section id="panel-qrcode" class="tab-panel">
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title">🔳 Customize QR Code</div>
-      <button class="btn btn-outline btn-sm" id="btn-reset-qr">↺ Reset default</button>
-    </div>
-    <div class="info-box teal">
-      Tick the fields to include, use ↑ ↓ to set the order. The QR on generated permits uses this format. Save, then generate again on Dashboard.
-    </div>
-    <div class="qr-opt-row">
-      <label class="qr-check"><input type="checkbox" id="qr-opt-upper"> Capital letters on serial, dispatch, minecode</label>
-      <label class="qr-check"><input type="checkbox" id="qr-opt-compact"> Remove spaces in serial, dispatch, minecode</label>
-    </div>
-    <div class="section-divider">Fields in QR (top = first)</div>
-    <div class="qr-field-list" id="qr-field-list"></div>
-    <div class="section-divider">Scan preview</div>
-    <div class="qr-preview-box" id="qr-preview-box"></div>
-    <div class="btn-group" style="margin-top:18px;">
-      <button type="button" class="btn btn-primary" id="btn-save-qr">💾 Save QR format</button>
-    </div>
   </div>
 </section>
 
@@ -1139,8 +1134,8 @@ const DEFAULT_QR_CONFIG = {
     { id: 'hours', on: true },
     { id: 'mineralQty', on: true },
     { id: 'vehicleNo', on: true },
-    { id: 'destination', on: true },
-    { id: 'deliveredTo', on: false },
+    { id: 'deliveredTo', on: true },
+    { id: 'destination', on: false },
     { id: 'destinationAddress', on: false }
   ],
   uppercaseCodes: false,
@@ -1168,7 +1163,7 @@ function normalizeQRConfig(raw){
 }
 
 function getQRConfig(){
-  return normalizeQRConfig(Store.get('qrConfig', null));
+  return normalizeQRConfig(Store.get('qrConfigV2', null));
 }
 
 function formatQRCode(v, cfg){
@@ -1279,7 +1274,7 @@ function persistQROptionsFromUI(){
   const compact = document.getElementById('qr-opt-compact');
   cfg.uppercaseCodes = !!(upper && upper.checked);
   cfg.compactCodes = !!(compact && compact.checked);
-  Store.set('qrConfig', cfg);
+  Store.set('qrConfigV2', cfg);
 }
 
 function initQRCustomizer(){
@@ -1300,7 +1295,7 @@ function initQRCustomizer(){
     if (!(t instanceof HTMLInputElement) || !t.dataset.qrToggle) return;
     const next = getQRConfig();
     next.fields = next.fields.map(f => f.id === t.dataset.qrToggle ? { ...f, on: t.checked } : f);
-    Store.set('qrConfig', next);
+    Store.set('qrConfigV2', next);
     renderQRFieldList();
   });
 
@@ -1317,7 +1312,7 @@ function initQRCustomizer(){
     const swap = next.fields[i];
     next.fields[i] = next.fields[j];
     next.fields[j] = swap;
-    Store.set('qrConfig', next);
+    Store.set('qrConfigV2', next);
     renderQRFieldList();
   });
 
@@ -1329,7 +1324,7 @@ function initQRCustomizer(){
     showToast('QR format saved','success');
   });
   if (resetBtn) resetBtn.addEventListener('click', () => {
-    Store.set('qrConfig', JSON.parse(JSON.stringify(DEFAULT_QR_CONFIG)));
+    Store.set('qrConfigV2', JSON.parse(JSON.stringify(DEFAULT_QR_CONFIG)));
     if (upper) upper.checked = false;
     if (compact) compact.checked = false;
     renderQRFieldList();
@@ -2104,6 +2099,11 @@ function initTabs(){
       document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
       document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
       tab.classList.add('active');
+      if(target==='qrcode'){
+        document.getElementById('panel-dashboard')?.classList.add('active');
+        document.getElementById('qr-customize-card')?.scrollIntoView({behavior:'smooth',block:'start'});
+        return;
+      }
       document.getElementById(`panel-${target}`)?.classList.add('active');
     });
   });
