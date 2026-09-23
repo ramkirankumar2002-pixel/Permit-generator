@@ -1076,6 +1076,10 @@ function incrDispatch(base, steps){
 // ============================================================
 // QR CODE GENERATION
 // ============================================================
+function compactQRToken(v){
+  return String(v || '').replace(/\s+/g, '').trim();
+}
+
 function buildQRText(p){
   const dist = String(p.totalDistance || '').replace(/kms$/i,'').trim();
   const qty = String(p.quantity || '').replace(/\s*MT$/i,'').trim();
@@ -1086,16 +1090,19 @@ function buildQRText(p){
   const hrsMatch = String(p.requiredTime || '').match(/(\d+)\s*hrs?/i);
   const hrs = hrsMatch ? `${hrsMatch[1]}hrs` : '1hrs';
   const deliveredTo = String(p.deliveredTo || '').trim();
+  const serial = compactQRToken(p.serialNo);
+  const dispatch = compactQRToken(p.dispatchSlipNo);
+  const minecode = compactQRToken(p.mineCode);
   return [
-    p.serialNo,
-    p.dispatchSlipNo,
-    p.mineCode,
+    serial,
+    dispatch,
+    minecode,
     datePart,
     timePart,
     dist ? `${dist}kms` : '',
     hrs,
     mineral && qty ? `${mineral}(${qty}MT)` : mineral,
-    p.vehicleNo,
+    compactQRToken(p.vehicleNo),
     deliveredTo
   ].join(',');
 }
