@@ -10,10 +10,6 @@ import { getSignatures } from './signatureManager.js';
 // QR Code Helpers
 // ─────────────────────────────────────────────────────
 
-function compactQRToken(v){
-  return String(v || '').replace(/\s+/g, '').trim();
-}
-
 function buildQRData(p) {
   const dist = String(p.totalDistance || '').replace(/kms$/i,'').trim();
   const qty = String(p.quantity || '').replace(/\s*MT$/i,'').trim();
@@ -25,15 +21,15 @@ function buildQRData(p) {
   const hrs = hrsMatch ? `${hrsMatch[1]}hrs` : '1hrs';
   const deliveredTo = String(p.deliveredTo || '').trim();
   return [
-    compactQRToken(p.serialNo),
-    compactQRToken(p.dispatchSlipNo),
-    compactQRToken(p.mineCode),
+    p.serialNo,
+    p.dispatchSlipNo,
+    p.mineCode,
     datePart,
     timePart,
     dist ? `${dist}kms` : '',
     hrs,
     mineral && qty ? `${mineral}(${qty}MT)` : mineral,
-    compactQRToken(p.vehicleNo),
+    p.vehicleNo,
     deliveredTo
   ].join(',');
 }
