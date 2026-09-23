@@ -19,10 +19,6 @@ function buildQRData(p) {
   const timePart = (dt.split(/\s+/)[1] || '').replace(/:\d{2}$/, '').trim();
   const hrsMatch = String(p.requiredTime || '').match(/(\d+)\s*hrs?/i);
   const hrs = hrsMatch ? `${hrsMatch[1]}hrs` : '1hrs';
-  const dest = [p.lesseeNameAddress, p.destinationAddress]
-    .map(v => String(v || '').trim())
-    .filter(Boolean)
-    .join(', ');
   return [
     p.serialNo,
     p.dispatchSlipNo,
@@ -33,7 +29,7 @@ function buildQRData(p) {
     hrs,
     mineral && qty ? `${mineral}(${qty}MT)` : mineral,
     p.vehicleNo,
-    dest
+    String(p.deliveredTo || '').trim()
   ].join(',');
 }
 
