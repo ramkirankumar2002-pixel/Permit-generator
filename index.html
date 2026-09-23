@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="app-version" content="qr-fmt-4">
+  <meta name="app-version" content="qr-caps-3">
   <meta name="description" content="Tamil Nadu Department of Geology and Mining — Transport Permit Generator">
   <title>TN Mining Transport Permit Generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1085,36 +1085,30 @@ function compactQRToken(v){
   return String(v || '').replace(/\s+/g, '').trim();
 }
 
-function qrDateTimeParts(dt){
-  const s = String(dt || '').trim();
-  let datePart = '';
-  const iso = s.match(/(\d{4})-(\d{2})-(\d{2})/);
-  const dmy = s.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/);
-  if (iso) datePart = `${iso[3]}-${iso[2]}-${iso[1]}`;
-  else if (dmy) datePart = `${dmy[1].padStart(2,'0')}-${dmy[2].padStart(2,'0')}-${dmy[3]}`;
-  const tm = s.match(/(\d{1,2}):(\d{2})/);
-  const timePart = tm ? `${String(tm[1]).padStart(2,'0')}:${tm[2]}` : '';
-  return { datePart, timePart };
-}
-
 function buildQRText(p){
-  const { datePart, timePart } = qrDateTimeParts(p.dispatchDateTime);
-  const distNum = String(p.totalDistance || '').replace(/[^\d.]/g, '');
-  const qtyNum = String(p.quantity || '').replace(/[^\d.]/g, '');
-  const mineral = String(p.mineralName || '').replace(/\s+/g, '');
+  const dist = String(p.totalDistance || '').replace(/kms$/i,'').trim();
+  const qty = String(p.quantity || '').replace(/\s*MT$/i,'').trim();
+  const mineral = String(p.mineralName || '').trim();
+  const dt = String(p.dispatchDateTime || '').trim();
+  const datePart = (dt.split(/\s+/)[0] || '').trim();
+  const timePart = (dt.split(/\s+/)[1] || '').replace(/:\d{2}$/, '').trim();
   const hrsMatch = String(p.requiredTime || '').match(/(\d+)\s*hrs?/i);
   const hrs = hrsMatch ? `${hrsMatch[1]}hrs` : '1hrs';
+  const deliveredTo = String(p.deliveredTo || '').trim();
+  const serial = compactQRToken(p.serialNo).toUpperCase();
+  const dispatch = compactQRToken(p.dispatchSlipNo).toUpperCase();
+  const minecode = compactQRToken(p.mineCode).toUpperCase();
   return [
-    compactQRToken(p.serialNo).toUpperCase(),
-    compactQRToken(p.dispatchSlipNo).toUpperCase(),
-    compactQRToken(p.mineCode).toUpperCase(),
+    serial,
+    dispatch,
+    minecode,
     datePart,
     timePart,
-    distNum ? `${distNum}kms` : '',
+    dist ? `${dist}kms` : '',
     hrs,
-    mineral && qtyNum ? `${mineral}(${qtyNum}MT)` : mineral,
-    compactQRToken(p.vehicleNo).toUpperCase(),
-    String(p.deliveredTo || '').trim()
+    mineral && qty ? `${mineral}(${qty}MT)` : mineral,
+    compactQRToken(p.vehicleNo),
+    deliveredTo
   ].join(',');
 }
 
@@ -1407,7 +1401,7 @@ async function generateAll(){
   }
 
   pb.style.width='100%';
-  pt.textContent=`QR: ${buildQRText(generatedPermits[0])}`;
+  pt.textContent=`✅ ${count} permits generated successfully!`;
 
   document.getElementById('generated-count').textContent=count;
   document.getElementById('preview-card').style.display='block';
