@@ -10,31 +10,85 @@ import { getSignatures } from './signatureManager.js';
 // QR Code Helpers
 // ─────────────────────────────────────────────────────
 
+function readQRConfig(){
+  try {
+    const raw = JSON.parse(localStorage.getItem('qrConfig') || 'null');
+    if (raw && Array.isArray(raw.fields)) return raw;
+  } catch { /* use default */ }
+  return {
+    fields: [
+      { id: 'serialNo', on: true },
+      { id: 'dispatchSlipNo', on: true },
+      { id: 'mineCode', on: true },
+      { id: 'date', on: true },
+      { id: 'time', on: true },
+      { id: 'distance', on: true },
+      { id: 'hours', on: true },
+      { id: 'mineralQty', on: true },
+      { id: 'vehicleNo', on: true },
+      { id: 'destination', on: true }
+    ],
+    uppercaseCodes: false,
+    compactCodes: false
+  };
+}
+
+function formatQRCode(v, cfg){
+  let s = String(v || '');
+  if (cfg.compactCodes) s = s.replace(/\s+/g, '');
+  if (cfg.uppercaseCodes) s = s.toUpperCase();
+  return s.trim();
+}
+
+function qrFieldValue(id, p, cfg){
+  switch (id) {
+    case 'serialNo':
+      return formatQRCode(p.serialNo, cfg);
+    case 'dispatchSlipNo':
+      return formatQRCode(p.dispatchSlipNo, cfg);
+    case 'mineCode':
+      return formatQRCode(p.mineCode, cfg);
+    case 'date':
+      return String(p.dispatchDateTime || '').trim().split(/\s+/)[0] || '';
+    case 'time':
+      return (String(p.dispatchDateTime || '').trim().split(/\s+/)[1] || '').replace(/:\d{2}$/, '');
+    case 'distance': {
+      const dist = String(p.totalDistance || '').replace(/kms$/i, '').trim();
+      return dist ? `${dist}kms` : '';
+    }
+    case 'hours': {
+      const hrsMatch = String(p.requiredTime || '').match(/(\d+)\s*hrs?/i);
+      return hrsMatch ? `${hrsMatch[1]}hrs` : '1hrs';
+    }
+    case 'mineralQty': {
+      const qty = String(p.quantity || '').replace(/\s*MT$/i, '').trim();
+      const mineral = String(p.mineralName || '').trim();
+      return mineral && qty ? `${mineral}(${qty}MT)` : mineral;
+    }
+    case 'vehicleNo':
+      return String(p.vehicleNo || '').trim();
+    case 'deliveredTo':
+      return String(p.deliveredTo || '').trim();
+    case 'destination':
+      return [p.lesseeNameAddress, p.destinationAddress]
+        .map(v => String(v || '').trim())
+        .filter(Boolean)
+        .join(', ');
+    case 'destinationAddress':
+      return String(p.destinationAddress || '').trim();
+    default: {
+      const _unused = id;
+      return '';
+    }
+  }
+}
+
 function buildQRData(p) {
-  const dist = String(p.totalDistance || '').replace(/kms$/i,'').trim();
-  const qty = String(p.quantity || '').replace(/\s*MT$/i,'').trim();
-  const mineral = String(p.mineralName || '').trim();
-  const dt = String(p.dispatchDateTime || '').trim();
-  const datePart = (dt.split(/\s+/)[0] || '').trim();
-  const timePart = (dt.split(/\s+/)[1] || '').replace(/:\d{2}$/, '').trim();
-  const hrsMatch = String(p.requiredTime || '').match(/(\d+)\s*hrs?/i);
-  const hrs = hrsMatch ? `${hrsMatch[1]}hrs` : '1hrs';
-  const dest = [p.lesseeNameAddress, p.destinationAddress]
-    .map(v => String(v || '').trim())
-    .filter(Boolean)
-    .join(', ');
-  return [
-    p.serialNo,
-    p.dispatchSlipNo,
-    p.mineCode,
-    datePart,
-    timePart,
-    dist ? `${dist}kms` : '',
-    hrs,
-    mineral && qty ? `${mineral}(${qty}MT)` : mineral,
-    p.vehicleNo,
-    dest
-  ].join(',');
+  const cfg = readQRConfig();
+  return cfg.fields
+    .filter(f => f.on)
+    .map(f => qrFieldValue(f.id, p, cfg))
+    .join(',');
 }
 
 function generateQRDataURL(text) {
