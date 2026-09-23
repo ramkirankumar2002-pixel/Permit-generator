@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="app-version" content="qr-caps-3">
   <meta name="description" content="Tamil Nadu Department of Geology and Mining — Transport Permit Generator">
   <title>TN Mining Transport Permit Generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -774,7 +775,11 @@ const Store = {
   del(k){ localStorage.removeItem(k); }
 };
 
-function getTemplate(){ return {...DEFAULT_TEMPLATE, ...Store.get('permitTemplate',{})}; }
+function getTemplate(){
+  const t = {...DEFAULT_TEMPLATE, ...Store.get('permitTemplate',{})};
+  t.mineCode = String(t.mineCode || '').replace(/\s+/g,'').toUpperCase();
+  return t;
+}
 
 // ============================================================
 // PRINT CALIBRATION & ALIGNMENT LOGIC
@@ -1138,8 +1143,9 @@ function buildPermit(index, params, tmpl){
 
   return {
     ...tmpl,
-    serialNo:        incrSerial(params.startSerial, index),
-    dispatchSlipNo:  incrDispatch(params.startDispatch, index),
+    mineCode:        String(tmpl.mineCode || '').replace(/\s+/g,'').toUpperCase(),
+    serialNo:        String(incrSerial(params.startSerial, index) || '').replace(/\s+/g,'').toUpperCase(),
+    dispatchSlipNo:  String(incrDispatch(params.startDispatch, index) || '').replace(/\s+/g,'').toUpperCase(),
     dispatchDateTime: fmtDT(dispatchDate),
     travellingDate:   fmtDT24(travelDate),
     requiredTime,
@@ -1322,9 +1328,11 @@ let generatedPermits = [];
 
 async function generateAll(){
   const count = parseInt(document.getElementById('gen-count').value)||50;
-  const startSerial = document.getElementById('gen-start-serial').value.trim();
-  const startDispatch = document.getElementById('gen-start-dispatch').value.trim();
+  const startSerial = document.getElementById('gen-start-serial').value.replace(/\s+/g,'').toUpperCase();
+  const startDispatch = document.getElementById('gen-start-dispatch').value.replace(/\s+/g,'').toUpperCase();
   const startDateStr = document.getElementById('gen-start-datetime').value;
+  document.getElementById('gen-start-serial').value = startSerial;
+  document.getElementById('gen-start-dispatch').value = startDispatch;
 
   if(!startSerial){ showToast('Enter starting serial number','error'); return; }
   if(!startDispatch){ showToast('Enter starting dispatch slip number','error'); return; }

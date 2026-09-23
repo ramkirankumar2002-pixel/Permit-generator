@@ -29,7 +29,7 @@ function buildPermitData(index, params, template) {
     // Static from template
     hsnCode:             template.hsnCode,
     lesseeId:            template.lesseeId,
-    mineCode:            template.mineCode,
+    mineCode:            String(template.mineCode || '').replace(/\s+/g,'').toUpperCase(),
     leaseAreaDetails:    template.leaseAreaDetails,
     lesseeNameAddress:   template.lesseeNameAddress,
     lesseeFullAddress:   template.lesseeFullAddress,
@@ -52,8 +52,8 @@ function buildPermitData(index, params, template) {
     authorizedPersonName: template.authorizedPersonName,
 
     // Dynamic fields
-    serialNo:       getSerialNo(params.startSerial, index),
-    dispatchSlipNo: getDispatchSlipNo(params.startDispatchSlip, index),
+    serialNo:       String(getSerialNo(params.startSerial, index) || '').replace(/\s+/g,'').toUpperCase(),
+    dispatchSlipNo: String(getDispatchSlipNo(params.startDispatchSlip, index) || '').replace(/\s+/g,'').toUpperCase(),
 
     dispatchDateTime: formatDateTime(dispatchDate),
     travellingDate:   formatDateTime24(travelDate),
