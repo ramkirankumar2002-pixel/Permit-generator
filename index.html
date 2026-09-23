@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="app-version" content="qr-tab-6">
+  <meta name="app-version" content="qr-fmt-new-7">
   <meta name="description" content="Tamil Nadu Department of Geology and Mining — Transport Permit Generator">
   <title>TN Mining Transport Permit Generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -623,22 +623,13 @@ body{font-family:'Inter',sans-serif;background:#f0f2f5;color:#212121;min-height:
   <div class="card" id="qr-customize-card">
     <div class="card-header">
       <div class="card-title">🔳 QR Customize</div>
-      <button class="btn btn-outline btn-sm" id="btn-reset-qr">↺ Reset default</button>
     </div>
     <div class="info-box teal">
-      Tick the fields to include and use ↑ ↓ to set the order. This is what a scan will show. Save, then generate again on Dashboard.
+      New QR format (old saved QR data is ignored):
+      serial, dispatch, minecode, date, time, distance, hours, mineral(qty), vehicle, Delivered To
     </div>
-    <div class="qr-opt-row">
-      <label class="qr-check"><input type="checkbox" id="qr-opt-upper"> Capital letters on serial, dispatch, minecode</label>
-      <label class="qr-check"><input type="checkbox" id="qr-opt-compact"> Remove spaces in serial, dispatch, minecode</label>
-    </div>
-    <div class="section-divider">Fields in QR (top = first)</div>
-    <div class="qr-field-list" id="qr-field-list"></div>
     <div class="section-divider">Scan preview</div>
     <div class="qr-preview-box" id="qr-preview-box"></div>
-    <div class="btn-group" style="margin-top:18px;">
-      <button type="button" class="btn btn-primary" id="btn-save-qr">💾 Save QR format</button>
-    </div>
   </div>
 </section>
 
@@ -1114,121 +1105,37 @@ function incrDispatch(base, steps){
 
 // ============================================================
 // QR CODE GENERATION
+// serial, dispatch, minecode, date, time, distance, hours, mineral(qty), vehicle, Delivered To
 // ============================================================
-const QR_FIELD_DEFS = [
-  { id: 'serialNo', label: 'Serial Number' },
-  { id: 'dispatchSlipNo', label: 'Dispatch Slip No' },
-  { id: 'mineCode', label: 'Minecode' },
-  { id: 'date', label: 'Date' },
-  { id: 'time', label: 'Time' },
-  { id: 'distance', label: 'Distance' },
-  { id: 'hours', label: 'Hours' },
-  { id: 'mineralQty', label: 'Mineral (Qty)' },
-  { id: 'vehicleNo', label: 'Vehicle No' },
-  { id: 'deliveredTo', label: 'Delivered To' },
-  { id: 'destination', label: 'Destination (Lessee + Address)' },
-  { id: 'destinationAddress', label: 'Destination Address only' }
-];
-
-const DEFAULT_QR_CONFIG = {
-  fields: [
-    { id: 'serialNo', on: true },
-    { id: 'dispatchSlipNo', on: true },
-    { id: 'mineCode', on: true },
-    { id: 'date', on: true },
-    { id: 'time', on: true },
-    { id: 'distance', on: true },
-    { id: 'hours', on: true },
-    { id: 'mineralQty', on: true },
-    { id: 'vehicleNo', on: true },
-    { id: 'deliveredTo', on: true },
-    { id: 'destination', on: false },
-    { id: 'destinationAddress', on: false }
-  ],
-  uppercaseCodes: false,
-  compactCodes: false
-};
-
-function normalizeQRConfig(raw){
-  const known = new Set(QR_FIELD_DEFS.map(d => d.id));
-  const ordered = [];
-  if (raw && Array.isArray(raw.fields)) {
-    raw.fields.forEach(f => {
-      if (f && known.has(f.id) && !ordered.some(x => x.id === f.id)) {
-        ordered.push({ id: f.id, on: !!f.on });
-      }
-    });
-  }
-  DEFAULT_QR_CONFIG.fields.forEach(f => {
-    if (!ordered.some(x => x.id === f.id)) ordered.push({ id: f.id, on: f.on });
-  });
-  return {
-    fields: ordered,
-    uppercaseCodes: !!(raw && raw.uppercaseCodes),
-    compactCodes: !!(raw && raw.compactCodes)
-  };
+function compactUpper(v){
+  return String(v || '').replace(/\s+/g, '').toUpperCase();
 }
 
-function getQRConfig(){
-  return normalizeQRConfig(Store.get('qrConfigV2', null));
+function qrDatePart(dt){
+  return String(dt || '').trim().split(/\s+/)[0] || '';
 }
 
-function formatQRCode(v, cfg){
-  let s = String(v || '');
-  if (cfg.compactCodes) s = s.replace(/\s+/g, '');
-  if (cfg.uppercaseCodes) s = s.toUpperCase();
-  return s.trim();
-}
-
-function qrFieldValue(id, p, cfg){
-  switch (id) {
-    case 'serialNo':
-      return formatQRCode(p.serialNo, cfg);
-    case 'dispatchSlipNo':
-      return formatQRCode(p.dispatchSlipNo, cfg);
-    case 'mineCode':
-      return formatQRCode(p.mineCode, cfg);
-    case 'date':
-      return String(p.dispatchDateTime || '').trim().split(/\s+/)[0] || '';
-    case 'time':
-      return (String(p.dispatchDateTime || '').trim().split(/\s+/)[1] || '').replace(/:\d{2}$/, '');
-    case 'distance': {
-      const dist = String(p.totalDistance || '').replace(/kms$/i, '').trim();
-      return dist ? `${dist}kms` : '';
-    }
-    case 'hours': {
-      const hrsMatch = String(p.requiredTime || '').match(/(\d+)\s*hrs?/i);
-      return hrsMatch ? `${hrsMatch[1]}hrs` : '1hrs';
-    }
-    case 'mineralQty': {
-      const qty = String(p.quantity || '').replace(/\s*MT$/i, '').trim();
-      const mineral = String(p.mineralName || '').trim();
-      return mineral && qty ? `${mineral}(${qty}MT)` : mineral;
-    }
-    case 'vehicleNo':
-      return String(p.vehicleNo || '').trim();
-    case 'deliveredTo':
-      return String(p.deliveredTo || '').trim();
-    case 'destination':
-      return [p.lesseeNameAddress, p.destinationAddress]
-        .map(v => String(v || '').trim())
-        .filter(Boolean)
-        .join(', ');
-    case 'destinationAddress':
-      return String(p.destinationAddress || '').trim();
-    default: {
-      const _unused = id;
-      return '';
-    }
-  }
+function qrTimePart(dt){
+  return (String(dt || '').trim().split(/\s+/)[1] || '').replace(/:\d{2}$/, '');
 }
 
 function buildQRText(p){
-  const cfg = getQRConfig();
-  return cfg.fields
-    .filter(f => f.on)
-    .map(f => qrFieldValue(f.id, p, cfg))
-    .join(',');
+  const dist = String(p.totalDistance || '').replace(/[^\d.]/g, '');
+  const qty = String(p.quantity || '').replace(/[^\d.]/g, '');
+  const mineral = String(p.mineralName || '').replace(/\s+/g, '');
+  const hrsMatch = String(p.requiredTime || '').match(/(\d+)\s*hrs?/i);
+  return [
+    compactUpper(p.serialNo),
+    compactUpper(p.dispatchSlipNo),
+    compactUpper(p.mineCode),
+    qrDatePart(p.dispatchDateTime),
+    qrTimePart(p.dispatchDateTime),
+    dist ? `${dist}kms` : '',
+    hrsMatch ? `${hrsMatch[1]}hrs` : '1hrs',
+    mineral && qty ? `${mineral}(${qty}MT)` : mineral,
+    compactUpper(p.vehicleNo),
+    String(p.deliveredTo || '').trim()
+  ].join(',');
 }
 
 function samplePermitForQR(){
@@ -1248,95 +1155,11 @@ function samplePermitForQR(){
   };
 }
 
-function renderQRPreview(){
+function initQRCustomizer(){
+  Store.del('qrConfig');
+  Store.del('qrConfigV2');
   const box = document.getElementById('qr-preview-box');
   if (box) box.textContent = buildQRText(samplePermitForQR());
-}
-
-function renderQRFieldList(){
-  const list = document.getElementById('qr-field-list');
-  if (!list) return;
-  const cfg = getQRConfig();
-  const sample = samplePermitForQR();
-  list.innerHTML = cfg.fields.map((f, i) => {
-    const def = QR_FIELD_DEFS.find(d => d.id === f.id);
-    const label = def ? def.label : f.id;
-    const preview = qrFieldValue(f.id, sample, cfg);
-    return `<div class="qr-field-row ${f.on ? '' : 'off'}" data-qr-id="${f.id}">
-      <label class="qr-check"><input type="checkbox" data-qr-toggle="${f.id}" ${f.on ? 'checked' : ''}> Include</label>
-      <span class="qr-field-name">${i + 1}. ${label}</span>
-      <span class="qr-field-sample">${preview}</span>
-      <div class="btn-group">
-        <button type="button" class="btn btn-outline btn-sm" data-qr-move="up" data-qr-id="${f.id}">↑</button>
-        <button type="button" class="btn btn-outline btn-sm" data-qr-move="down" data-qr-id="${f.id}">↓</button>
-      </div>
-    </div>`;
-  }).join('');
-  renderQRPreview();
-}
-
-function persistQROptionsFromUI(){
-  const cfg = getQRConfig();
-  const upper = document.getElementById('qr-opt-upper');
-  const compact = document.getElementById('qr-opt-compact');
-  cfg.uppercaseCodes = !!(upper && upper.checked);
-  cfg.compactCodes = !!(compact && compact.checked);
-  Store.set('qrConfigV2', cfg);
-}
-
-function initQRCustomizer(){
-  const list = document.getElementById('qr-field-list');
-  const upper = document.getElementById('qr-opt-upper');
-  const compact = document.getElementById('qr-opt-compact');
-  const saveBtn = document.getElementById('btn-save-qr');
-  const resetBtn = document.getElementById('btn-reset-qr');
-  if (!list) return;
-
-  const cfg = getQRConfig();
-  if (upper) upper.checked = cfg.uppercaseCodes;
-  if (compact) compact.checked = cfg.compactCodes;
-  renderQRFieldList();
-
-  list.addEventListener('change', e => {
-    const t = e.target;
-    if (!(t instanceof HTMLInputElement) || !t.dataset.qrToggle) return;
-    const next = getQRConfig();
-    next.fields = next.fields.map(f => f.id === t.dataset.qrToggle ? { ...f, on: t.checked } : f);
-    Store.set('qrConfigV2', next);
-    renderQRFieldList();
-  });
-
-  list.addEventListener('click', e => {
-    const btn = e.target instanceof Element ? e.target.closest('[data-qr-move]') : null;
-    if (!btn) return;
-    const id = btn.getAttribute('data-qr-id');
-    const dir = btn.getAttribute('data-qr-move');
-    const next = getQRConfig();
-    const i = next.fields.findIndex(f => f.id === id);
-    if (i < 0) return;
-    const j = dir === 'up' ? i - 1 : i + 1;
-    if (j < 0 || j >= next.fields.length) return;
-    const swap = next.fields[i];
-    next.fields[i] = next.fields[j];
-    next.fields[j] = swap;
-    Store.set('qrConfigV2', next);
-    renderQRFieldList();
-  });
-
-  if (upper) upper.addEventListener('change', () => { persistQROptionsFromUI(); renderQRFieldList(); });
-  if (compact) compact.addEventListener('change', () => { persistQROptionsFromUI(); renderQRFieldList(); });
-  if (saveBtn) saveBtn.addEventListener('click', () => {
-    persistQROptionsFromUI();
-    renderQRFieldList();
-    showToast('QR format saved','success');
-  });
-  if (resetBtn) resetBtn.addEventListener('click', () => {
-    Store.set('qrConfigV2', JSON.parse(JSON.stringify(DEFAULT_QR_CONFIG)));
-    if (upper) upper.checked = false;
-    if (compact) compact.checked = false;
-    renderQRFieldList();
-    showToast('QR format reset to default','warning');
-  });
 }
 
 function genQR(text){
