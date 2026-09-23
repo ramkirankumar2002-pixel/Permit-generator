@@ -14,15 +14,23 @@ function buildQRData(p) {
   const dist = String(p.totalDistance || '').replace(/kms$/i,'').trim();
   const qty = String(p.quantity || '').replace(/\s*MT$/i,'').trim();
   const mineral = String(p.mineralName || '').trim();
-  const dest = String(p.destinationAddress || '').trim();
-  const dt = String(p.dispatchDateTime || '').replace(/:\d{2}$/, '');
+  const dt = String(p.dispatchDateTime || '').trim();
+  const datePart = (dt.split(/\s+/)[0] || '').trim();
+  const timePart = (dt.split(/\s+/)[1] || '').replace(/:\d{2}$/, '').trim();
+  const hrsMatch = String(p.requiredTime || '').match(/(\d+)\s*hrs?/i);
+  const hrs = hrsMatch ? `${hrsMatch[1]}hrs` : '1hrs';
+  const dest = [p.lesseeNameAddress, p.destinationAddress]
+    .map(v => String(v || '').trim())
+    .filter(Boolean)
+    .join(', ');
   return [
     p.serialNo,
     p.dispatchSlipNo,
     p.mineCode,
-    dt,
+    datePart,
+    timePart,
     dist ? `${dist}kms` : '',
-    '1hrs',
+    hrs,
     mineral && qty ? `${mineral}(${qty}MT)` : mineral,
     p.vehicleNo,
     dest
