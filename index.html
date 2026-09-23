@@ -1090,9 +1090,9 @@ function buildQRText(p){
   const hrsMatch = String(p.requiredTime || '').match(/(\d+)\s*hrs?/i);
   const hrs = hrsMatch ? `${hrsMatch[1]}hrs` : '1hrs';
   const deliveredTo = String(p.deliveredTo || '').trim();
-  const serial = compactQRToken(p.serialNo).toUpperCase();
-  const dispatch = compactQRToken(p.dispatchSlipNo).toUpperCase();
-  const minecode = compactQRToken(p.mineCode).toUpperCase();
+  const serial = compactQRToken(p.serialNo);
+  const dispatch = compactQRToken(p.dispatchSlipNo);
+  const minecode = compactQRToken(p.mineCode);
   return [
     serial,
     dispatch,

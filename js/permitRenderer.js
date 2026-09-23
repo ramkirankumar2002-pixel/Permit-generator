@@ -25,9 +25,9 @@ function buildQRData(p) {
   const hrs = hrsMatch ? `${hrsMatch[1]}hrs` : '1hrs';
   const deliveredTo = String(p.deliveredTo || '').trim();
   return [
-    compactQRToken(p.serialNo).toUpperCase(),
-    compactQRToken(p.dispatchSlipNo).toUpperCase(),
-    compactQRToken(p.mineCode).toUpperCase(),
+    compactQRToken(p.serialNo),
+    compactQRToken(p.dispatchSlipNo),
+    compactQRToken(p.mineCode),
     datePart,
     timePart,
     dist ? `${dist}kms` : '',
